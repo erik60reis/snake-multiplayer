@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Multiplayer by Erik Reis</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #000;
+        }
+        #nickname-form {
+            margin-bottom: 20px;
+        }
+        #leaderboard {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <p>Smake Multiplayer by Erik Reis</p>
+    <div id="nickname-form">
+        <input type="text" id="nickname" placeholder="nickname..." />
+        <button onclick="startGame()">PLAY!</button>
+    </div>
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div id="leaderboard">
+        <h2>leaderboard</h2>
+        <ul id="leaderboard-list"></ul>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const socket = io();
+
+        let nickname = '';
+        let gameStarted = false;
+
+        function startGame() {
+            nickname = document.getElementById('nickname').value;
+            if (nickname.trim() !== '') {
+                document.getElementById('nickname-form').style.display = 'none';
+                gameStarted = true;
+                socket.emit('newPlayer', nickname);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!gameStarted) return;
+            if (e.key) socket.emit('move', 'up');
+            if (['ArrowDown', 's'].includes(e.key)) socket.emit('move', 'down');
+            if (['ArrowLeft', 'a'].includes(e.key)) socket.emit('move', 'left');
+            if (['ArrowRight', 'd'].includes(e.key)) socket.emit('move', 'right');
+        });
+
+        socket.on('gameState', (state) => {
+            ctx.fillStyle = 'white'
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            state.food.forEach(food => {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(food.x * 5, food.y * 5, 5, 5);
+            });
+
+            for (let id in state.snakes) {
+                const snake = state.snakes[id];
+                snake.body.forEach((segment, index) => {
+                    ctx.fillStyle = id === socket.id ? 'darkred' : 'darkgreen';
+                    ctx.fillRect(segment.x * 5, segment.y * 5, 5, 5);
+
+                    if (index === 0) {
+                        ctx.fillStyle = 'black';
+                        ctx.font = '5px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(snake.nickname, segment.x * 5 + 2.5, segment.y * 5 - 5);
+                    }
+                });
+            }
+        });
+
+        socket.on('updateLeaderboard', (leaderboard) => {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = `${player.nickname}: ${player.score}`;
+                leaderboardList.appendChild(li);
+            });
+        });
+    </script>
+</body>
+</html>
