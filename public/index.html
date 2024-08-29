@@ -58,14 +58,14 @@
 
         document.addEventListener('keydown', (e) => {
             if (!gameStarted) return;
-            if (e.key) socket.emit('move', 'up');
-            if (['ArrowDown', 's'].includes(e.key)) socket.emit('move', 'down');
-            if (['ArrowLeft', 'a'].includes(e.key)) socket.emit('move', 'left');
-            if (['ArrowRight', 'd'].includes(e.key)) socket.emit('move', 'right');
+            if (e.key === 'ArrowUp' || e.key === 'w') socket.emit('move', 'up');
+            if (e.key === 'ArrowDown' || e.key === 's') socket.emit('move', 'down');
+            if (e.key === 'ArrowLeft' || e.key === 'a') socket.emit('move', 'left');
+            if (e.key === 'ArrowRight' || e.key === 'd') socket.emit('move', 'right');
         });
 
         socket.on('gameState', (state) => {
-            ctx.fillStyle = 'white'
+            ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             state.food.forEach(food => {
@@ -76,16 +76,14 @@
             for (let id in state.snakes) {
                 const snake = state.snakes[id];
                 snake.body.forEach((segment, index) => {
-                    ctx.fillStyle = id === socket.id ? 'darkred' : 'darkgreen';
+                    ctx.fillStyle = id === socket.id ? 'darkred' : 'blue';
                     ctx.fillRect(segment.x * 5, segment.y * 5, 5, 5);
-
-                    if (index === 0) {
-                        ctx.fillStyle = 'black';
-                        ctx.font = '5px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(snake.nickname, segment.x * 5 + 2.5, segment.y * 5 - 5);
-                    }
                 });
+
+                ctx.fillStyle = 'black';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(snake.nickname, snake.body[0].x * 5 + 2.5, snake.body[0].y * 5 - 2);
             }
         });
 

@@ -22,6 +22,8 @@ function generateFood() {
 }
 
 io.on('connection', (socket) => {
+    console.log('Novo jogador conectado:', socket.id);
+
     socket.on('newPlayer', (nickname) => {
         snakes[socket.id] = {
             nickname,
@@ -40,6 +42,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        console.log('Jogador desconectado:', socket.id);
         delete snakes[socket.id];
         updateLeaderboard();
         io.emit('updateLeaderboard', leaderboard);
@@ -56,8 +59,9 @@ setInterval(() => {
     for (let id in snakes) {
         let snake = snakes[id];
         let head = snake.body[0];
-
         let newHead;
+
+        // Movimentar a cobra
         if (snake.direction === 'up') newHead = { x: head.x, y: head.y - 1 };
         if (snake.direction === 'down') newHead = { x: head.x, y: head.y + 1 };
         if (snake.direction === 'left') newHead = { x: head.x - 1, y: head.y };
@@ -70,24 +74,34 @@ setInterval(() => {
             continue;
         }
 
+        if (snake.body.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
+            delete snakes[id];
+            updateLeaderboard();
+            io.emit('updateLeaderboard', leaderboard);
+            continue;
+        }
+
+        let foodEaten = false;
         for (let i = 0; i < food.length; i++) {
             if (newHead.x === food[i].x && newHead.y === food[i].y) {
                 snake.score += 10;
-                snake.body.unshift(newHead);
-                food[i] = { x: Math.floor(Math.random() * 100), y: Math.floor(Math.random() * 100) };
-                updateLeaderboard();
-                io.emit('updateLeaderboard', leaderboard);
+                snake.body.unshift(newHead); // Aumenta o tamanho da cobra
+                food[i] = { x: Math.floor(Math.random() * 100), y: Math.floor(Math.random() * 100) }; // Gera nova comida
+                foodEaten = true;
                 break;
             }
         }
 
-        snake.body.pop();
+        if (!foodEaten) {
+            snake.body.pop();
+        }
         snake.body.unshift(newHead);
+
     }
 
     io.emit('gameState', { snakes, food });
 }, 100);
 
 server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
