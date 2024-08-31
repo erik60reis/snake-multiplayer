@@ -22,17 +22,18 @@ function generateFood() {
 }
 
 io.on('connection', (socket) => {
-    console.log('Novo jogador conectado:', socket.id);
-
     socket.on('newPlayer', (nickname) => {
-        snakes[socket.id] = {
-            nickname,
-            body: [{ x: 50, y: 50 }],
-            direction: 'right',
-            score: 0
-        };
-        updateLeaderboard();
-        io.emit('updateLeaderboard', leaderboard);
+        try {
+            nickname = nickname.substring(0, 15);
+            snakes[socket.id] = {
+                nickname,
+                body: [{ x: 50, y: 50 }],
+                direction: 'right',
+                score: 0
+            };
+            updateLeaderboard();
+            io.emit('updateLeaderboard', leaderboard);
+        }catch{}
     });
 
     socket.on('move', (direction) => {
@@ -42,7 +43,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Jogador desconectado:', socket.id);
         delete snakes[socket.id];
         updateLeaderboard();
         io.emit('updateLeaderboard', leaderboard);
